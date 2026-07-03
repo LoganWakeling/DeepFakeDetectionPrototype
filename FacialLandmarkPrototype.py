@@ -22,7 +22,7 @@ detector = vision.FaceLandmarker.create_from_options(options)
 # =========================
 # 2. Load image
 # =========================
-image_path = "test1.jpg"
+image_path = "/home/testuser/Desktop/MediaPipeDeepFakeDetectionPrototype/FacialLandmarkData/test1.jpg"
 
 mp_image = mp.Image.create_from_file(image_path)
 opencv_image = cv2.imread(image_path)
@@ -39,8 +39,31 @@ if result.face_landmarks:
 
     h, w, _ = opencv_image.shape
 
-    for face_landmarks in result.face_landmarks:
+    print(f"Detected {len(result.face_landmarks)} face(s)")
 
+    for face_index, face_landmarks in enumerate(result.face_landmarks):
+
+        print(f"\nFace {face_index}:")
+
+        # -------------------------
+        # Print ONLY the first 10
+        # -------------------------
+        for landmark_index, landmark in enumerate(face_landmarks[:10]):
+
+            x = int(landmark.x * w)
+            y = int(landmark.y * h)
+
+            print(
+                f"Landmark {landmark_index}: "
+                f"normalized=({landmark.x:.4f}, "
+                f"{landmark.y:.4f}, "
+                f"{landmark.z:.4f}) "
+                f"pixels=({x}, {y})"
+            )
+
+        # -------------------------
+        # Draw ALL landmarks
+        # -------------------------
         for landmark in face_landmarks:
 
             x = int(landmark.x * w)
@@ -53,8 +76,6 @@ if result.face_landmarks:
                 (0, 255, 0),
                 -1
             )
-
-    print(f"Detected {len(result.face_landmarks)} face(s)")
 
 else:
     print("No face detected.")
