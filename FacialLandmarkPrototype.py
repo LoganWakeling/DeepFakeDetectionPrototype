@@ -19,10 +19,81 @@ options = vision.FaceLandmarkerOptions(
 
 detector = vision.FaceLandmarker.create_from_options(options)
 
+
+def process_image(image_path):
+
+    # Load image
+    mp_image = mp.Image.create_from_file(image_path)
+    opencv_image = cv2.imread(image_path)
+
+    # Detect landmarks
+    result = detector.detect(mp_image)
+
+    if result.face_landmarks:
+
+        h, w, _ = opencv_image.shape
+
+        print(f"\nProcessing: {image_path}")
+        print(f"Detected {len(result.face_landmarks)} face(s)")
+
+        for face_index, face_landmarks in enumerate(result.face_landmarks):
+
+            print(f"\nFace {face_index}:")
+
+            # Print first 10 landmarks
+            for landmark_index, landmark in enumerate(face_landmarks[:10]):
+
+                x = int(landmark.x * w)
+                y = int(landmark.y * h)
+
+                print(
+                    f"Landmark {landmark_index}: "
+                    f"normalized=({landmark.x:.4f}, "
+                    f"{landmark.y:.4f}, "
+                    f"{landmark.z:.4f}) "
+                    f"pixels=({x}, {y})"
+                )
+
+            # Draw all landmarks
+            for landmark in face_landmarks:
+
+                x = int(landmark.x * w)
+                y = int(landmark.y * h)
+
+                cv2.circle(
+                    opencv_image,
+                    (x, y),
+                    1,
+                    (0, 255, 0),
+                    -1
+                )
+
+    else:
+        print(f"No face detected in {image_path}")
+
+    # Show image
+    cv2.imshow(image_path, opencv_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+
+# =========================
+# Process two images
+# =========================
+image_paths = [
+    "/home/testuser/Desktop/MediaPipeDeepFakeDetectionPrototype/FacialLandmarkData/test2.jpg",
+    "/home/testuser/Desktop/MediaPipeDeepFakeDetectionPrototype/FacialLandmarkData/test3.jpg"
+]
+
+for path in image_paths:
+    process_image(path)
+
+'''
 # =========================
 # 2. Load image
 # =========================
 image_path = "/home/testuser/Desktop/MediaPipeDeepFakeDetectionPrototype/FacialLandmarkData/test1.jpg"
+
 
 mp_image = mp.Image.create_from_file(image_path)
 opencv_image = cv2.imread(image_path)
@@ -77,6 +148,7 @@ if result.face_landmarks:
                 -1
             )
 
+
 else:
     print("No face detected.")
 
@@ -86,3 +158,4 @@ else:
 cv2.imshow("Face Landmarks", opencv_image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
+'''
