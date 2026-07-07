@@ -1,9 +1,9 @@
-#Deepfake Detection Research Project
+# Deepfake Detection Research Project
 
 ## Goal
 Compare deepfake detection performance across 3 generator types:
 - Gan-based (e.g., SimSwap, DeepFaceLab)
-- Autotencoder-based
+- Autoencoder-based
 - Diffusion-based (e.g., Stable Diffusion / LDM)
 
 ## Feature Groups (3 metrics)
@@ -13,7 +13,7 @@ Compare deepfake detection performance across 3 generator types:
 
 ### 2. Geometric features
 - MediaPipe face landmarks
-- distances + angles between facial points
+- normalized facial-region landmark statistics
 
 ### 3. Frequency features
 - 2D DCT
@@ -32,3 +32,4 @@ Compare deepfake detection performance across 3 generator types:
 ## Notes
 - This is an experimental comparison study, not a production detector
 - Frequency features are extracted from the full image (resized, not cropped), ensuring consistency with identity and geometry pipelines.
+- Stable feature extraction code lives in `feature_extractors/`; the MediaPipe geometry extractor is `feature_extractors/mediapipe_features.py`.

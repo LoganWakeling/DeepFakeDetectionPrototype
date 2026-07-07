@@ -7,7 +7,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-from experiment_runner import (
+from training.experiment_runner import (
     GENERATOR_COLUMN,
     GENERATOR_TYPE_COLUMN,
     IMAGE_COLUMN,
@@ -17,7 +17,7 @@ from experiment_runner import (
     load_manifest,
     summarize_prediction_table,
 )
-from feature_extraction import create_feature_context, extract_image_features
+from feature_extractors.feature_extraction import create_feature_context, extract_image_features
 
 
 def build_features_for_model(manifest: pd.DataFrame, feature_groups: tuple[str, ...]) -> pd.DataFrame:

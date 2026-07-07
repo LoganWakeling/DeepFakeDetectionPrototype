@@ -5,7 +5,7 @@ import unittest
 
 import numpy as np
 
-from arcface_embedding import EMBEDDING_DIM, create_face_analyzer, extract_arcface_result
+from feature_extractors.arcface_embedding import EMBEDDING_DIM, create_face_analyzer, extract_arcface_result
 
 
 SAMPLE_IMAGES = sorted(Path("data/test_images").glob("sample*.jpg"))

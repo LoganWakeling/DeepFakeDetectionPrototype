@@ -22,7 +22,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
-from feature_extraction import extract_image_features, create_feature_context, validate_feature_groups
+from feature_extractors.feature_extraction import (
+    create_feature_context,
+    extract_image_features,
+    validate_feature_groups,
+)
 
 
 LABEL_COLUMN = "label"

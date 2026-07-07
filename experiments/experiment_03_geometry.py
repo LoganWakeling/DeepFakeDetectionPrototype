@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from experiment_runner import main
+from training.experiment_runner import main
 
 
 if __name__ == "__main__":

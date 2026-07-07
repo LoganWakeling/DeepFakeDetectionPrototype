@@ -6,7 +6,7 @@ import unittest
 import cv2
 import numpy as np
 
-from frequency import extract_frequency_features
+from feature_extractors.frequency import extract_frequency_features
 
 
 SAMPLE_IMAGES = sorted(Path("data/test_images").glob("sample*.jpg"))

@@ -6,7 +6,7 @@ from typing import Any
 
 import pandas as pd
 
-from experiment_runner import EXPERIMENTS, run_experiment
+from training.experiment_runner import EXPERIMENTS, run_experiment
 
 
 def _format_accuracy(value: object) -> str:
@@ -68,14 +68,17 @@ def run_all_experiments(
     output_dir: Path,
     test_size: float,
     random_state: int,
+    experiment_names: list[str] | None = None,
 ) -> dict[str, pd.DataFrame]:
     output_dir.mkdir(parents=True, exist_ok=True)
+    selected_experiments = experiment_names or list(EXPERIMENTS)
 
     overall_rows: list[dict[str, object]] = []
     generator_rows: list[dict[str, object]] = []
     generator_type_rows: list[dict[str, object]] = []
 
-    for experiment_name, feature_groups in EXPERIMENTS.items():
+    for experiment_name in selected_experiments:
+        feature_groups = EXPERIMENTS[experiment_name]
         print(f"\nRunning {experiment_name}: {', '.join(feature_groups)}")
         metrics = run_experiment(
             experiment_name=experiment_name,
@@ -117,24 +120,36 @@ def run_all_experiments(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run all deepfake detection ablation experiments.")
+    parser = argparse.ArgumentParser(description="Run deepfake detection ablation experiments.")
+    parser.add_argument(
+        "--experiment",
+        choices=["all", *EXPERIMENTS],
+        default="all",
+        help="Experiment to run. Use 'all' to run every ablation experiment.",
+    )
     parser.add_argument("--manifest", type=Path, required=True, help="CSV with image_path,label columns.")
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/experiments"))
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--random-state", type=int, default=42)
     args = parser.parse_args()
 
+    experiment_names = None if args.experiment == "all" else [args.experiment]
     tables = run_all_experiments(
         manifest_path=args.manifest,
         output_dir=args.output_dir,
         test_size=args.test_size,
         random_state=args.random_state,
+        experiment_names=experiment_names,
     )
 
     _print_table("Overall test accuracy by experiment", tables["overall"])
     _print_table("Test accuracy by generator", tables["by_generator"])
     _print_table("Test accuracy by generator type", tables["by_generator_type"])
-    print(f"\nSaved summary CSV files in {args.output_dir}")
+    if args.experiment == "all":
+        print(f"\nSaved experiment outputs and summary CSV files in {args.output_dir}")
+    else:
+        print(f"\nSaved {args.experiment} outputs in {args.output_dir / args.experiment}")
+        print(f"Saved summary CSV files in {args.output_dir}")
 
 
 if __name__ == "__main__":

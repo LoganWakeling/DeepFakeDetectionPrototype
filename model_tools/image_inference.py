@@ -7,7 +7,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-from feature_extraction import create_feature_context, extract_image_features
+from feature_extractors.feature_extraction import create_feature_context, extract_image_features
 
 
 def predict_image(image_path: Path, model_path: Path) -> dict[str, object]:

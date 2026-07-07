@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any, Iterable
 
-from arcface_embedding import create_face_analyzer, extract_arcface_features
-from frequency import extract_frequency_features
+from feature_extractors.arcface_embedding import create_face_analyzer, extract_arcface_features
+from feature_extractors.frequency import extract_frequency_features
 
 
 FEATURE_GROUPS = ("identity", "frequency", "geometry")
@@ -17,14 +18,15 @@ def _load_geometry_extractor():
     Prefer naming the file mediapipe_features.py or geometry.py instead of
     mediapipe.py, because mediapipe.py can shadow the installed mediapipe package.
     """
-    try:
-        from mediapipe_features import extract_geometry_features
-    except ImportError as exc:
+    if find_spec("feature_extractors.mediapipe_features") is None:
         raise ImportError(
-            "Geometry features were requested, but mediapipe_features.py was not found. "
-            "Add a function named extract_geometry_features(image) before running "
-            "geometry experiments."
-        ) from exc
+            "Geometry features were requested, but feature_extractors/mediapipe_features.py "
+            "was not found. Add that file with a function named extract_geometry_features(image) "
+            "before running geometry experiments."
+        )
+
+    from feature_extractors.mediapipe_features import extract_geometry_features
+
     return extract_geometry_features
 
 
