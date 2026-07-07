@@ -42,30 +42,9 @@ def process_image(image_path):
 
         h, w, _ = opencv_image.shape
 
-        '''
-        print(f"\nProcessing: {image_path}")
-        print(f"Detected {len(result.face_landmarks)} face(s)")
-        '''
 
         for face_index, face_landmarks in enumerate(result.face_landmarks):
 
-            '''
-            print(f"\nFace {face_index}:")
-
-            # Print first 10 landmarks
-            for landmark_index, landmark in enumerate(face_landmarks[:10]):
-
-                x = int(landmark.x * w)
-                y = int(landmark.y * h)
-
-                print(
-                    f"Landmark {landmark_index}: "
-                    f"normalized=({landmark.x:.4f}, "
-                    f"{landmark.y:.4f}, "
-                    f"{landmark.z:.4f}) "
-                    f"pixels=({x}, {y})"
-                )
-            '''
 
             # Draw all landmarks
             for landmark in face_landmarks:
@@ -110,24 +89,6 @@ def extract_landmarks(image_path):
 
     return landmarks
 
-    '''
-    mp_image = mp.Image.create_from_file(image_path)
-    result = detector.detect(mp_image)
-
-    if not result.face_landmarks:
-        return None
-
-    # Get first detected face
-    face_landmarks = result.face_landmarks[0]
-
-    # Store normalized coordinates
-    landmarks = np.array([
-        [lm.x, lm.y, lm.z]
-        for lm in face_landmarks
-    ])
-
-    return landmarks
-    '''
 
 
 # ========================================
@@ -208,11 +169,14 @@ def run_landmark_extraction(file_path):
 # ================
 # Testing
 # ================
+
+#photo paths and extracting landmarks into seperate regions (eyes, nose, mouth, etc.)
 path1 = "/home/testuser/Desktop/MediaPipeDeepFakeDetectionPrototype/FacialLandmarkData/obama1.jpg"
 path2 = "/home/testuser/Desktop/MediaPipeDeepFakeDetectionPrototype/FacialLandmarkData/obama5.jpg"
 region1 = run_landmark_extraction(path1)
 region2 = run_landmark_extraction(path2)
 
+#use this when comparing two photos to get the landmark differences 
 scores, overall = compare_regions(region1, region2)
 
 print("Overall Score:", overall)
@@ -221,28 +185,6 @@ for region, score in scores.items():
     print(f"{region:15}: {score:.5f}")
 
 
-
-
-
-
-'''
-#import file path here to extract all images from dataset (files must be jpg for now)
-extracted_images = []
-extracted_regions = []
-file_path = "/home/testuser/Desktop/MediaPipeDeepFakeDetectionPrototype/FacialLandmarkData"
-files = glob.glob(os.path.join(file_path, '*.jpg'))
-
-for file in files:
-    print(file)
-    process_image(file)
-    image1 = extract_landmarks(file)
-    region1 = split_landmarks_by_region(image1)
-    extracted_images.append(image1)
-    extracted_regions.append(region1)
-
-print(extracted_images)
-print(extracted_regions)
-'''
 
 
 
