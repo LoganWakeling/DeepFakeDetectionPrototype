@@ -1,10 +1,19 @@
+from __future__ import annotations
+
+from pathlib import Path
+import unittest
+
 import cv2
 import numpy as np
+
 from frequency import extract_frequency_features
 
 
-def extract_frequency_features_cv2dct(img, size=128):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).astype(np.float32)
+SAMPLE_IMAGES = sorted(Path("data/test_images").glob("sample*.jpg"))
+
+
+def extract_frequency_features_cv2dct(image: np.ndarray, size: int = 128) -> dict[str, float]:
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float32)
     resized = cv2.resize(gray, (size, size), interpolation=cv2.INTER_AREA)
     normalized = resized / 255.0
     normalized = normalized - np.mean(normalized)
@@ -32,13 +41,30 @@ def extract_frequency_features_cv2dct(img, size=128):
     }
 
 
-img = cv2.imread("data/test_images/sample5.jpg")
+class FrequencyFeatureTests(unittest.TestCase):
+    def test_sample_images_match_cv2_dct_reference(self) -> None:
+        self.assertEqual(len(SAMPLE_IMAGES), 5)
 
-features = extract_frequency_features(img)
-cv2dct_features = extract_frequency_features_cv2dct(img)
+        for image_path in SAMPLE_IMAGES:
+            with self.subTest(image=str(image_path)):
+                image = cv2.imread(str(image_path))
+                self.assertIsNotNone(image)
 
-print("SciPy DCT feature vector:", list(features.values()))
-print("cv2.dct feature vector:", list(cv2dct_features.values()))
-print("Feature names:", list(features.keys()))
-print("Length:", len(features))
-print("Close match:", np.allclose(list(features.values()), list(cv2dct_features.values()), rtol=1e-5, atol=1e-7))
+                features = extract_frequency_features(image)
+                cv2dct_features = extract_frequency_features_cv2dct(image)
+
+                self.assertEqual(list(features), list(cv2dct_features))
+                self.assertEqual(len(features), 5)
+                self.assertTrue(np.all(np.isfinite(list(features.values()))))
+                self.assertTrue(
+                    np.allclose(
+                        list(features.values()),
+                        list(cv2dct_features.values()),
+                        rtol=1e-5,
+                        atol=1e-7,
+                    )
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()

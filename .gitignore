@@ -4,6 +4,10 @@
 # Python cache
 __pycache__/
 *.py[cod]
+.pycache/
 
 # macOS
 .DS_Store
+
+# Downloaded InsightFace model cache
+.insightface/

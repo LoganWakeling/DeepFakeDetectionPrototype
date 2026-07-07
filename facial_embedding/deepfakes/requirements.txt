@@ -1,0 +1,11 @@
+insightface
+onnxruntime
+opencv-python
+numpy
+scikit-learn
+matplotlib
+imageio-ffmpeg
+tqdm
+certifi
+huggingface_hub
+umap-learn
