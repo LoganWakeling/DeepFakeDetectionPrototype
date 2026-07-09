@@ -369,3 +369,28 @@ project comparison does not require `model_tools/evaluate_model.py`.
   `feature_extractors/mediapipe_features.py` so it does not shadow the installed
   `mediapipe` package.
 - `.insightface/` is a local generated model cache and is ignored by git.
+
+## Dataset
+- 
+
+## Notes
+- Histograms
+- Display results to visualize
+- Compute cosine similarity and display histograms (arcface embedding)
+- Ablation for the 5 features of frequency.py (for every experiment) 2^5
+- Careful on how we store the images (for example, low quality jpegs)
+- Low quality jpegs already remove the data so frequency features will not be accurate (and model fails)
+- Even if we have the quality factor (for example 100%), if its compressed, then restored back to 100%, the information is still lost
+- Instead of resizing every image every time in the experiments, we resize it and store it once into the dataset before feeding it into the classifier (include in script) and store as png.
+- Include label for each image on its quality factor. 
+- Ablation study on the number of regions for landmark 
+- Arcface ablation study on upper/lower face
+- Distribution of feature vectors for arcface, mediapipe, and dct should be normalized the same way (So the concatenated feature vector doesn't have numbers 1000+ for dct and 0-1 for arcface (bad distribution)).
+- Training the classifiers separately (weak classifiers) and then fusing them (instead of concatenating the feature vectors).
+- Consider the decision metrics, voting, etc.
+- Define metrics of our experiments (not just accuracy) (have plots) (for example, precision, recall, TP/FP)
+- Use our dataset for our experiments, and then afterwards we can use the evaulation_model.py for external datasets.
+- Test generalization, and we can show which feature extractor has the best generalization (mediapipe most likely).
+- Train on our dataset, and test on different datasets (How can we make sure the results (for example, poor generalization) aren't because of our training dataset?)
+- Train the classifier multiple times on different datasets before evaluation on external datasets (Separate experiment). 
+- 
