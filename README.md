@@ -43,6 +43,35 @@ fake/stablediffusion001.jpg,1,test,Stable Diffusion,diffusion-based
 
 `label` uses `0 = real` and `1 = fake`.
 
+## Evaluation Goals and Metrics
+
+Fake images (`label = 1`) are the positive class. The primary failure is a
+**false negative**: a fake image classified as real. Therefore, fake-class
+recall and the false-negative rate are the main operational measures. High
+recall must be considered together with precision or the false-positive rate so
+that it is not achieved simply by classifying nearly every image as fake.
+
+The experiments currently save the following train and test metrics in
+`metrics.json`:
+
+- **Accuracy**: proportion of all images classified correctly.
+- **Precision**: proportion of images predicted as fake that are actually fake.
+- **Recall**: proportion of all fake images detected; `1 - recall` is the
+  false-negative rate.
+- **F1**: balance between precision and recall at the selected decision
+  threshold.
+- **ROC AUC**: ability to rank fake images above real images across decision
+  thresholds.
+- **Average precision**: summary of the precision-recall trade-off across
+  thresholds.
+- **Confusion matrix**: counts in scikit-learn order `[[TN, FP], [FN, TP]]`.
+
+Test metrics are the main experimental results. Training metrics are reported
+to help diagnose overfitting. ROC AUC and average precision compare overall
+separability, while recall and false negatives reflect the project's primary
+failure. A future improvement is to report F2 and select a decision threshold
+on validation data that prioritizes recall while limiting false positives.
+
 ## Important Commands
 
 Install dependencies:
@@ -136,6 +165,10 @@ python3 -m unittest tests.test_frequency tests.test_arcface_embedding
 - `PROJECT_CONTEXT.md`
   - Research notes describing the larger project goal, feature groups, classifier
     plan, dataset assumptions, and ablation strategy.
+
+- `RESEARCH_DECISIONS.md`
+  - Paper-oriented record of methodology decisions, formulas, rationale,
+    planned analyses, and remaining open choices.
 
 - `requirements.txt`
   - Python dependencies for feature extraction, model training, evaluation, and
@@ -371,26 +404,89 @@ project comparison does not require `model_tools/evaluate_model.py`.
 - `.insightface/` is a local generated model cache and is ignored by git.
 
 ## Dataset
-- 
+
+- Use equal numbers of source-defined `high`-quality PNG images and
+  `low`-quality compressed JPEG images, stored in corresponding directories.
+- Record the quality group and source dataset in the manifest. The `high` and
+  `low` labels describe how the groups were collected; they are not measured
+  JPEG quality factors.
+- Balance quality groups within real/fake classes and generator types where
+  possible, and preserve both groups in train, validation, and test splits.
+- Record image format, dimensions, file size, and bytes per pixel so the groups
+  can be described objectively in addition to their source-based labels.
+- Interpret a DCT performance difference as an association with the collected
+  quality groups. Because format and source dataset also differ, this design
+  does not prove that JPEG compression alone caused the difference.
 
 ## Notes
 - Histograms
 - Display results to visualize
-- Compute cosine similarity and display histograms (arcface embedding)
+- Compute cosine similarity and display histograms
 - Ablation for the 5 features of frequency.py (for every experiment) 2^5
-- Careful on how we store the images (for example, low quality jpegs)
-- Low quality jpegs already remove the data so frequency features will not be accurate (and model fails)
+- Careful on how images are stored so the original PNG/JPEG quality-group signal
+  is not accidentally removed.
+- Low-quality JPEGs may have already lost frequency information, so evaluate
+  frequency performance separately for the two quality groups.
 - Even if we have the quality factor (for example 100%), if its compressed, then restored back to 100%, the information is still lost
-- Instead of resizing every image every time in the experiments, we resize it and store it once into the dataset before feeding it into the classifier (include in script) and store as png.
-- Include label for each image on its quality factor. 
+- Do not convert the collected JPEGs to PNG and describe them as restored
+  high-quality images; loss from earlier compression is irreversible.
+- Include the source-defined `high`/`low` quality group in the manifest.
 - Ablation study on the number of regions for landmark 
 - Arcface ablation study on upper/lower face
 - Distribution of feature vectors for arcface, mediapipe, and dct should be normalized the same way (So the concatenated feature vector doesn't have numbers 1000+ for dct and 0-1 for arcface (bad distribution)).
 - Training the classifiers separately (weak classifiers) and then fusing them (instead of concatenating the feature vectors).
 - Consider the decision metrics, voting, etc.
 - Define metrics of our experiments (not just accuracy) (have plots) (for example, precision, recall, TP/FP)
+  - Our project already does this. evaluate_model() calculates accuracy, precision, recall, F1 score, ROC AUC, average precision, and confusion matrix(scikit-learn layout, TN, FP, FN, TP), saved in metrics.json.
+
 - Use our dataset for our experiments, and then afterwards we can use the evaulation_model.py for external datasets.
 - Test generalization, and we can show which feature extractor has the best generalization (mediapipe most likely).
 - Train on our dataset, and test on different datasets (How can we make sure the results (for example, poor generalization) aren't because of our training dataset?)
 - Train the classifier multiple times on different datasets before evaluation on external datasets (Separate experiment). 
-- 
+
+
+## Cosine Similarity Computation for Analysis
+- After we run the experiments and get our outputs, we can write a script that computes the average feature vector for all real images, and the average feature vector for all fake images (from the training dataset). Then, it will compute the cosine similarity between a test image (n) (in the test dataset) and the known real/fake centroid (the feature vector averages), for every n test image. Then we can display that on a histogram.
+- We can do it separately, as well, for each feature group. 1. identity 2. geometry 3. frequency 4. all features
+- That way, let's say, experiment 2 (frequency-only) performs well. A histogram may show: real images have high similarity to the real frequency centroid. Fake images shift away from that centroid.
+- But let's say experiment 3 (geometry-only) performs poorly. The histogram would show that real and fake geoemtry similarities heavily overlap (their cosine similarities to the centroid are the same across the board)
+- This would explain why the classifier struggles with geometry-only detection (for example).
+- It would answer the questions:
+- Do real and fake images occupy measurably different regions of feature space?
+- Which feature group separates them most clearly?
+- Do GAN, diffusion, and autoencoder fakes differ from real images in different ways?
+
+- Note: the calculated real and fake centroids will be split into feature specifics. For example, we'll have an identity-feature real centroid, geometry-feature real centroid, and frequency-feature real centroid
+- If we choose to plot the generator type (gan, diffusion, and autoencoder), it can show which generation type does a better job at creating images most similar to real images (based on feature-specificity of course).
+
+- Generate script to calculate the centroids and cosine similarities AFTER dataset is created and ran through the model. (We need to finalize what the columns in our outputs look like.)
+
+- We'll add a separate script post-experiment to calculate and display the histograms from the output we receive.
+
+Before calculating centroids, the post-experiment script should split the rows
+into the exact training and test sets, fit missing-value imputation and column
+standardization on training features only, and apply those fitted transforms to
+both sets. Real and fake centroids are averages of the standardized **training**
+vectors; standardized test vectors are then compared with both centroids. For
+combined experiments, calculate similarity per feature group and combine the
+group scores with equal weights so that a high-dimensional group such as
+ArcFace does not dominate simply because it has more columns.
+
+## Feature Scaling
+- The XGBoost classifier uses decision trees to split individual columns in the thresholds, so a DCT column being numerically larger than an ArcFace column does not inherently give it more influence.
+- The concatenation of feature vectors may not need normalization (to ensure a balanced distribution among the vectors) because of that.
+- geometry_landmark_count in the mediapipe feature extractor will always be 478 (if an image is detected), so removing this from the feature vector might be helpful. (Unless, we have it so each region is detected independently, for example, if there is a face with only the eyes visible, only that region is detected and outputted. But since our dataset only includes pictures of entire faces, this would be unnecessary).
+
+## Evaluation To-Dos
+
+- Add F2 and false-negative-rate reporting.
+- Choose the operating threshold using validation data rather than the test set;
+  prioritize fake recall subject to an acceptable false-positive rate.
+- Add ROC and precision-recall plots plus a clearly labelled confusion matrix.
+- Implement the post-experiment centroid/cosine-similarity analysis using only
+  training-fitted preprocessing.
+- Preserve an explicit sample identifier or split assignment in generated
+  outputs so post-experiment analyses can reproduce the exact split safely.
+- Report MediaPipe face-detection failure rates separately for real and fake
+  images, and remove the constant `geometry_landmark_count` feature or replace
+  it with an explicit detection-status indicator.
