@@ -9,6 +9,9 @@ import mediapipe as mp
 # -----------------------------
 # Configuration
 # -----------------------------
+# make input path the folder which has the images you want to sort through
+# make output path the folder which you wanted all single face images to be outputted to
+
 INPUT_FOLDER = "/home/vboxuser/Desktop/DeepFakeResearchProject/WIDER_train/images/52--Photographers"
 OUTPUT_FOLDER = "/home/vboxuser/Desktop/DeepFakeResearchProject/WIDER_train/collection"
 MODEL_PATH = "face_landmarker.task"
