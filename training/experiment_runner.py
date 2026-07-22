@@ -34,6 +34,8 @@ IMAGE_COLUMN = "image_path"
 SPLIT_COLUMN = "split"
 GENERATOR_COLUMN = "generator"
 GENERATOR_TYPE_COLUMN = "generator_type"
+QUALITY_COLUMN = "quality_label"
+SOURCE_DATASET_COLUMN = "source_dataset"
 
 
 EXPERIMENTS: dict[str, tuple[str, ...]] = {
@@ -177,13 +179,7 @@ def build_prediction_table(
     """Build one row per image with expected label, prediction, and fake probability."""
     y_pred = model.predict(x)
     y_score = model.predict_proba(x)[:, 1]
-    metadata_columns = [
-        column
-        for column in [IMAGE_COLUMN, LABEL_COLUMN, SPLIT_COLUMN, GENERATOR_COLUMN, GENERATOR_TYPE_COLUMN]
-        if column in manifest.columns
-    ]
-
-    table = manifest.loc[x.index, metadata_columns].copy()
+    table = manifest.loc[x.index].copy()
     table["expected_label"] = y.astype(int).to_numpy()
     table["fake_probability"] = y_score
     table["predicted_label"] = y_pred.astype(int)
@@ -200,7 +196,7 @@ def summarize_prediction_table(predictions: pd.DataFrame) -> dict[str, object]:
         "accuracy": float(predictions["correct"].mean()) if len(predictions) else None,
     }
 
-    for group_column in [GENERATOR_COLUMN, GENERATOR_TYPE_COLUMN]:
+    for group_column in [GENERATOR_COLUMN, GENERATOR_TYPE_COLUMN, QUALITY_COLUMN, SOURCE_DATASET_COLUMN]:
         if group_column not in predictions.columns:
             continue
 

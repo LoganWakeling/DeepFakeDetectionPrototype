@@ -8,8 +8,6 @@ import joblib
 import pandas as pd
 
 from training.experiment_runner import (
-    GENERATOR_COLUMN,
-    GENERATOR_TYPE_COLUMN,
     IMAGE_COLUMN,
     LABEL_COLUMN,
     build_prediction_table,
@@ -53,12 +51,7 @@ def evaluate_saved_model(model_path: Path, manifest_path: Path, output_path: Pat
     else:
         fake_probability = model.predict_proba(x)[:, 1]
         predicted_label = model.predict(x).astype(int)
-        metadata_columns = [
-            column
-            for column in [IMAGE_COLUMN, GENERATOR_COLUMN, GENERATOR_TYPE_COLUMN]
-            if column in manifest.columns
-        ]
-        predictions = manifest[metadata_columns].copy()
+        predictions = manifest.copy()
         predictions["fake_probability"] = fake_probability
         predictions["predicted_label"] = predicted_label
         predictions["predicted_class"] = predictions["predicted_label"].map({0: "real", 1: "fake"})

@@ -1,0 +1,48 @@
+{
+  "real_names": ["RealPhotos"],
+  "fake_names": ["FakePhotos"],
+  "quality_names": {
+    "HighQuality": "high",
+    "LowQuality": "low"
+  },
+  "source_datasets": {
+    "FaceForensics": "FaceForensics++",
+    "FlickrFaces": "FlickrFaces",
+    "ImageAlignData": "ImageAlignData",
+    "WIDER_train": "WIDER Face",
+    "StableDiffusionV1.5": "Stable Diffusion v1.5 collection",
+    "StyleGan": "StyleGAN collection"
+  },
+  "generators": {
+    "Deepfakes": {
+      "generator": "FaceForensics++ DeepFakes",
+      "generator_type": "autoencoder",
+      "manipulation_type": "face_swap"
+    },
+    "Face2Face": {
+      "generator": "Face2Face",
+      "generator_type": "graphics",
+      "manipulation_type": "face_reenactment"
+    },
+    "FaceShifter": {
+      "generator": "FaceShifter",
+      "generator_type": "gan",
+      "manipulation_type": "face_swap"
+    },
+    "FaceSwap": {
+      "generator": "FaceSwap",
+      "generator_type": "graphics",
+      "manipulation_type": "face_swap"
+    },
+    "StableDiffusionV1.5": {
+      "generator": "Stable Diffusion v1.5",
+      "generator_type": "diffusion",
+      "manipulation_type": "full_synthesis"
+    },
+    "StyleGan": {
+      "generator": "StyleGAN",
+      "generator_type": "gan",
+      "manipulation_type": "full_synthesis"
+    }
+  }
+}

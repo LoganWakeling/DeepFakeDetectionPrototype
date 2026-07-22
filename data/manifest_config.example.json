@@ -1,0 +1,19 @@
+{
+  "real_names": ["real", "authentic"],
+  "fake_names": ["fake", "synthetic"],
+  "quality_names": {
+    "high_quality": "high",
+    "low_quality": "low"
+  },
+  "source_datasets": {
+    "ffhq": "FFHQ",
+    "celeb_df": "Celeb-DF"
+  },
+  "generators": {
+    "my_gan_folder": {
+      "generator": "Generator name",
+      "generator_type": "gan",
+      "manipulation_type": "face_swap"
+    }
+  }
+}

@@ -43,6 +43,56 @@ fake/stablediffusion001.jpg,1,test,Stable Diffusion,diffusion-based
 
 `label` uses `0 = real` and `1 = fake`.
 
+### Creating a manifest from a dataset folder
+
+The dataset itself can remain outside this repository. The manifest creator
+recursively scans it, records absolute image paths, reads objective image
+properties, and infers labels from directory names:
+
+```bash
+python3 scripts/create_manifest.py /path/to/dataset \
+  --output data/manifest.csv \
+  --config data/manifest_config.example.json \
+  --strict
+```
+
+Copy and adapt the example config's folder-name mappings to match the dataset.
+Matching is case-insensitive and works at any directory level. Built-in names
+cover common `real`, `fake`, `high`, `low`, train/test, SimSwap, DeepFaceLab,
+and Stable Diffusion folders. `--strict` prevents writing a manifest when a
+real/fake label, quality label, or fake generator family cannot be inferred;
+omit it for an initial scan that writes blanks and prints warnings. The dataset
+root folder name is used as the source dataset unless a more specific mapped
+directory is found. If train/test directories
+are absent, a stable stratified 80/20 split is assigned (change it with
+`--test-fraction`). Stratification jointly preserves class, generator type,
+quality label, and source dataset proportions. Every stratum with at least two
+images receives both train and test data; singleton strata remain in training
+and are listed in the summary. Existing train/test directory assignments are
+preserved. Re-running with the same relative file layout preserves sample IDs
+and assignments.
+
+Generated columns are `sample_id`, `image_path`, `label`, `class_name`,
+`split`, `source_dataset`, `quality_label`, `generator`, `generator_type`,
+`manipulation_type`, `image_format`, `width`, `height`, `channels`,
+`file_size_bytes`, and `bytes_per_pixel`. Quality is the dataset's
+source-defined label; the numeric properties are recorded separately and do
+not claim to recover an image's prior compression history.
+All manifest columns are preserved in the per-image prediction CSVs. Metrics
+also include grouped summaries by generator, generator type, quality label, and
+source dataset when those columns are populated.
+
+The command also writes `data/manifest.summary.json` by default. It records
+total image and byte counts, average dimensions, distributions for all major
+metadata fields, the same distributions within each split, missing metadata
+warnings, and singleton strata. Use `--summary another/path.json` to change its
+location.
+
+Stratification alone cannot prevent leakage when multiple images come from the
+same person, source video, or real/fake pair. If the database has those
+relationships, they should be exposed as a group identifier before splitting
+so all related images stay in one split.
+
 ## Evaluation Goals and Metrics
 
 Fake images (`label = 1`) are the positive class. The primary failure is a
