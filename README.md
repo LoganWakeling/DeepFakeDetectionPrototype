@@ -45,18 +45,23 @@ fake/stablediffusion001.jpg,1,test,Stable Diffusion,diffusion-based
 
 ### Creating a manifest from a dataset folder
 
-The dataset itself can remain outside this repository. The manifest creator
-recursively scans it, records absolute image paths, reads objective image
-properties, and infers labels from directory names:
+The dataset itself can remain outside this repository. From the repository
+root, adapt `data/manifest_config.json` so its folder-name mappings match the
+dataset, then run:
 
 ```bash
-python3 scripts/create_manifest.py /path/to/dataset \
+.venv/bin/python scripts/create_manifest.py "<dataset-root>" \
   --output data/manifest.csv \
-  --config data/manifest_config.example.json \
+  --config data/manifest_config.json \
   --strict
 ```
 
-Copy and adapt the example config's folder-name mappings to match the dataset.
+Replace `<dataset-root>` with the path to the database folder. The script
+recursively scans it, records absolute image paths, reads objective image
+properties, and infers labels from directory names. Use
+`data/manifest_config.example.json` as a reference when adapting the active
+configuration.
+
 Matching is case-insensitive and works at any directory level. Built-in names
 cover common `real`, `fake`, `high`, `low`, train/test, SimSwap, DeepFaceLab,
 and Stable Diffusion folders. `--strict` prevents writing a manifest when a
