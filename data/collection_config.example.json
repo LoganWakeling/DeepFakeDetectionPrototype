@@ -1,0 +1,55 @@
+{
+  "sources": [
+    {
+      "path": "/Volumes/EXTERNAL/DatasetA/real_images",
+      "source_dataset": "Dataset A",
+      "source_url": "https://official.example/dataset-a",
+      "license": "replace with official licence",
+      "media_type": "images",
+      "label": 0,
+      "quality_label": "high",
+      "minimum_source_size": 512
+    },
+    {
+      "path": "/Volumes/EXTERNAL/DatasetB/autoencoder_videos",
+      "source_dataset": "Dataset B",
+      "source_url": "https://official.example/dataset-b",
+      "license": "replace with official licence",
+      "media_type": "videos",
+      "label": 1,
+      "quality_label": "high",
+      "generator": "DeepFaceLab",
+      "generator_type": "autoencoder",
+      "manipulation_type": "face_swap",
+      "segment_duration_seconds": 10,
+      "frames_per_segment": 1,
+      "segment_boundary_margin_seconds": 1
+    },
+    {
+      "path": "/Volumes/EXTERNAL/DatasetC/gan_images",
+      "source_dataset": "Dataset C",
+      "source_url": "https://official.example/dataset-c",
+      "license": "replace with official licence",
+      "media_type": "images",
+      "label": 1,
+      "quality_label": "high",
+      "generator": "StyleGAN",
+      "generator_type": "gan",
+      "manipulation_type": "full_synthesis",
+      "minimum_source_size": 512
+    },
+    {
+      "path": "/Volumes/EXTERNAL/DatasetD/diffusion_images",
+      "source_dataset": "Dataset D",
+      "source_url": "https://official.example/dataset-d",
+      "license": "replace with official licence",
+      "media_type": "images",
+      "label": 1,
+      "quality_label": "high",
+      "generator": "Stable Diffusion 2.1",
+      "generator_type": "diffusion",
+      "manipulation_type": "full_synthesis",
+      "minimum_source_size": 512
+    }
+  ]
+}

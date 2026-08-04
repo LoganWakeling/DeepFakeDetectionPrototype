@@ -1,0 +1,264 @@
+SCRIPT NAME
+===========
+
+collect_balanced_dataset.py
+
+Full repository path:
+scripts/collect_balanced_dataset.py
+
+
+PURPOSE
+=======
+
+This script creates a balanced deepfake image database from multiple image and
+video datasets.
+
+By default, it selects:
+
+- 1,500 high-quality real originals
+- 1,500 high-quality fake originals
+  - 500 autoencoder
+  - 500 GAN
+  - 500 diffusion
+
+It produces four versions of every original:
+
+- Original-quality standardized PNG
+- JPEG quality 75
+- JPEG quality 50
+- JPEG quality 25
+
+This produces 12,000 experimental images in total.
+
+
+IMPORTANT LABELLING REQUIREMENT
+==============================
+
+The script does not determine whether an image is real or fake by looking at
+it. It also does not infer the generator family from appearance.
+
+You must provide the correct labels in a JSON configuration file using the
+official documentation for each source dataset. Renaming folders to Real or
+Fake is optional because the JSON configuration is authoritative.
+
+
+STEP 1: ACTIVATE THE PROJECT ENVIRONMENT
+========================================
+
+Open a terminal in the project folder:
+
+cd /Users/hikari/Documents/Internship/MediaPipeDeepFakeDetectionPrototype
+
+Activate the virtual environment if necessary:
+
+source .venv/bin/activate
+
+
+STEP 2: CREATE THE SOURCE CONFIGURATION
+=======================================
+
+Copy the example configuration:
+
+cp data/collection_config.example.json data/collection_config.json
+
+Edit:
+
+data/collection_config.json
+
+Add one entry for every source folder. Example still-image source:
+
+{
+  "path": "/Volumes/EXTERNAL/DatasetA/gan_images",
+  "source_dataset": "Dataset A",
+  "source_url": "https://official-dataset-page.example",
+  "license": "Research use",
+  "media_type": "images",
+  "label": 1,
+  "quality_label": "high",
+  "generator": "StyleGAN",
+  "generator_type": "gan",
+  "manipulation_type": "full_synthesis",
+  "minimum_source_size": 512
+}
+
+Example real-image source:
+
+{
+  "path": "/Volumes/EXTERNAL/DatasetB/real_images",
+  "source_dataset": "Dataset B",
+  "source_url": "https://official-dataset-page.example",
+  "license": "Research use",
+  "media_type": "images",
+  "label": 0,
+  "quality_label": "high",
+  "minimum_source_size": 512
+}
+
+Use label 0 for real and label 1 for fake.
+
+Fake generator_type must be one of:
+
+- autoencoder
+- gan
+- diffusion
+
+Common manipulation_type values are:
+
+- face_swap
+- face_reenactment
+- full_synthesis
+- inpainting
+
+
+STEP 3: CONFIGURE VIDEO SOURCES
+===============================
+
+For a compilation made from independent 10-second clips, use:
+
+{
+  "path": "/Volumes/EXTERNAL/DatasetC/videos",
+  "source_dataset": "Dataset C",
+  "source_url": "https://official-dataset-page.example",
+  "license": "Research use",
+  "media_type": "videos",
+  "label": 1,
+  "quality_label": "high",
+  "generator": "DeepFaceLab",
+  "generator_type": "autoencoder",
+  "manipulation_type": "face_swap",
+  "segment_duration_seconds": 10,
+  "frames_per_segment": 1,
+  "segment_boundary_margin_seconds": 1,
+  "minimum_frame_spacing_seconds": 2
+}
+
+The script randomly chooses frames away from segment boundaries. If multiple
+frames are taken from a segment, all of them and their quality versions remain
+in the same train, validation, or test split.
+
+Only assign one generator label to a video source when all configured segments
+belong to that generator. Use separate source entries when necessary.
+
+
+STEP 4: RUN THE COLLECTOR
+=========================
+
+Run from the repository root:
+
+python scripts/collect_balanced_dataset.py \
+  --config data/collection_config.json \
+  --output-dir /Volumes/USA-Students/ImprovedDatabase \
+  --originals-per-class 1500 \
+  --minimum-source-size 512 \
+  --standardized-size 512 \
+  --validation-fraction 0.15 \
+  --test-fraction 0.15 \
+  --random-state 42
+
+Use a new output directory. The script refuses to overwrite an existing
+metadata/manifest.csv.
+
+
+OUTPUT STRUCTURE
+================
+
+ImprovedDatabase/
+  originals/
+    real/
+    fake/
+      autoencoder/
+      gan/
+      diffusion/
+    auxiliary/
+      face2face/
+      faceswap/
+  derived/
+    standardized_faces/
+    controlled_quality/
+      original/
+      jpeg_q75/
+      jpeg_q50/
+      jpeg_q25/
+  metadata/
+    manifest.csv
+    sources.csv
+    exclusions.csv
+    collection_summary.json
+    licenses/
+
+The 12,000 experimental samples are stored under derived/controlled_quality.
+The files under originals and standardized_faces are archival/intermediate
+files and are not additional experimental samples.
+
+
+METADATA FILES
+==============
+
+metadata/manifest.csv
+  One row per quality variant. It records labels, generator information,
+  source information, paths, video/segment metadata, quality setting, image
+  properties, hashes, and split assignments.
+
+metadata/sources.csv
+  A copy of the configured dataset-source metadata.
+
+metadata/exclusions.csv
+  Files excluded because of read errors, failed extraction, or duplication.
+
+metadata/collection_summary.json
+  Counts, settings, generator-family totals, warnings, and exclusion totals.
+
+metadata/licenses/
+  Place copies of dataset licences or usage agreements here when available.
+
+
+SPLIT BEHAVIOUR
+===============
+
+The default command creates approximately:
+
+- 70% training
+- 15% validation
+- 15% testing
+
+All four quality versions of an original remain in the same split. Frames from
+the same configured video segment also remain in the same split.
+
+
+QUALITY NOTES
+=============
+
+JPEG Q75, Q50, and Q25 are controlled compressed versions. This process is
+compression, not decompression.
+
+The script checks readability and minimum dimensions, but it cannot prove that
+a source is genuinely high quality or has never been compressed. Review each
+source and its official documentation before marking quality_label as high.
+
+
+COMMON ERRORS
+=============
+
+"Requested ... samples, but only ... are available"
+  The configured sources do not contain enough eligible images for that class
+  or generator family. Add more sources or lower the requested count.
+
+"must be explicitly reviewed and configured with quality_label='high'"
+  Add "quality_label": "high" after reviewing the source.
+
+"fake generator_type must be one of ..."
+  Use exactly autoencoder, gan, or diffusion for the core fake sources.
+
+"Refusing to overwrite existing collection manifest"
+  Select a new output directory. This prevents accidental replacement of an
+  existing collection.
+
+"Expected 12000 variant rows, produced ..."
+  Some selected originals were duplicated or failed during processing. Review
+  metadata/exclusions.csv, add eligible sources, and rerun into a new directory.
+
+
+GET COMMAND HELP
+================
+
+python scripts/collect_balanced_dataset.py --help

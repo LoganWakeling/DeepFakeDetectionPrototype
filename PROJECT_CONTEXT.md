@@ -31,5 +31,7 @@ Compare deepfake detection performance across 3 generator types:
 
 ## Notes
 - This is an experimental comparison study, not a production detector
-- Frequency features are extracted from the full image (resized, not cropped), ensuring consistency with identity and geometry pipelines.
+- A shared largest-face crop (25% margin) is applied before identity, geometry,
+  and frequency extraction. If no face is detected, extraction falls back to
+  the original image.
 - Stable feature extraction code lives in `feature_extractors/`; the MediaPipe geometry extractor is `feature_extractors/mediapipe_features.py`.

@@ -7,6 +7,8 @@ from typing import Any
 import pandas as pd
 
 from training.experiment_runner import EXPERIMENTS, run_experiment
+from training.xception_runner import EXPERIMENT_NAME as XCEPTION_EXPERIMENT
+from training.xception_runner import run_xception_experiment
 
 
 def _format_accuracy(value: object) -> str:
@@ -119,34 +121,94 @@ def run_all_experiments(
     return tables
 
 
+def tables_from_metrics(
+    experiment_name: str,
+    metrics: dict[str, Any],
+) -> dict[str, pd.DataFrame]:
+    """Create the same printable summary tables for a single experiment."""
+    return {
+        "overall": pd.DataFrame([_overall_row(experiment_name, metrics)]),
+        "by_generator": pd.DataFrame(
+            _group_rows(
+                experiment_name,
+                metrics,
+                summary_key="by_generator",
+                group_column="generator",
+            )
+        ),
+        "by_generator_type": pd.DataFrame(
+            _group_rows(
+                experiment_name,
+                metrics,
+                summary_key="by_generator_type",
+                group_column="generator_type",
+            )
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run deepfake detection ablation experiments.")
     parser.add_argument(
         "--experiment",
-        choices=["all", *EXPERIMENTS],
+        choices=["all", *EXPERIMENTS, XCEPTION_EXPERIMENT],
         default="all",
-        help="Experiment to run. Use 'all' to run every ablation experiment.",
+        help=(
+            "Experiment to run. 'all' runs the seven feature ablations; "
+            "08_xception runs the optional image-level baseline."
+        ),
     )
     parser.add_argument("--manifest", type=Path, required=True, help="CSV with image_path,label columns.")
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/experiments"))
     parser.add_argument("--test-size", type=float, default=0.2)
     parser.add_argument("--random-state", type=int, default=42)
+    parser.add_argument("--epochs", type=int, default=10, help="Xception only.")
+    parser.add_argument("--batch-size", type=int, default=16, help="Xception only.")
+    parser.add_argument("--validation-size", type=float, default=0.1, help="Xception only.")
+    parser.add_argument(
+        "--cache-dir",
+        type=Path,
+        help="Xception decoded/resized image cache (defaults inside its output folder).",
+    )
+    parser.add_argument(
+        "--no-image-cache",
+        action="store_true",
+        help="Xception only: avoid storing decoded/resized image tensors.",
+    )
     args = parser.parse_args()
 
-    experiment_names = None if args.experiment == "all" else [args.experiment]
-    tables = run_all_experiments(
-        manifest_path=args.manifest,
-        output_dir=args.output_dir,
-        test_size=args.test_size,
-        random_state=args.random_state,
-        experiment_names=experiment_names,
-    )
+    if args.experiment == XCEPTION_EXPERIMENT:
+        metrics = run_xception_experiment(
+            manifest_path=args.manifest,
+            output_dir=args.output_dir,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            validation_size=args.validation_size,
+            random_state=args.random_state,
+            cache_dir=args.cache_dir,
+            cache_images=not args.no_image_cache,
+        )
+        tables = tables_from_metrics(XCEPTION_EXPERIMENT, metrics)
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+        for name, table in tables.items():
+            table.to_csv(args.output_dir / f"summary_{name}.csv", index=False)
+    else:
+        experiment_names = None if args.experiment == "all" else [args.experiment]
+        tables = run_all_experiments(
+            manifest_path=args.manifest,
+            output_dir=args.output_dir,
+            test_size=args.test_size,
+            random_state=args.random_state,
+            experiment_names=experiment_names,
+        )
 
     _print_table("Overall test accuracy by experiment", tables["overall"])
     _print_table("Test accuracy by generator", tables["by_generator"])
     _print_table("Test accuracy by generator type", tables["by_generator_type"])
     if args.experiment == "all":
         print(f"\nSaved experiment outputs and summary CSV files in {args.output_dir}")
+    elif args.experiment == XCEPTION_EXPERIMENT:
+        print(f"\nSaved {XCEPTION_EXPERIMENT} outputs in {args.output_dir / XCEPTION_EXPERIMENT}")
     else:
         print(f"\nSaved {args.experiment} outputs in {args.output_dir / args.experiment}")
         print(f"Saved summary CSV files in {args.output_dir}")

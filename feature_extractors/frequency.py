@@ -72,7 +72,7 @@ def extract_frequency_features(
     size: int = DEFAULT_SIZE,
 ) -> dict[str, float]:
     """
-    Extract frequency-domain features for a full image sample.
+    Extract frequency-domain features from an image or shared face crop.
 
     Features match PROJECT_CONTEXT.md:
     - 2D DCT on grayscale image samples
@@ -97,7 +97,7 @@ def extract_frequency_features(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Extract DCT frequency features from a full image sample.")
+    parser = argparse.ArgumentParser(description="Extract DCT frequency features from an image sample.")
     parser.add_argument("image_path", type=Path, help="Path to an image sample.")
     parser.add_argument("--size", type=int, default=DEFAULT_SIZE, help="Square size used before DCT.")
     args = parser.parse_args()

@@ -43,6 +43,36 @@ fake/stablediffusion001.jpg,1,test,Stable Diffusion,diffusion-based
 
 `label` uses `0 = real` and `1 = fake`.
 
+### Collecting a balanced high-quality dataset
+
+Use `scripts/collect_balanced_dataset.py` to sample from multiple configured
+still-image and video datasets. Copy `data/collection_config.example.json`, then
+replace its paths and metadata with authoritative information from each source:
+
+```bash
+python scripts/collect_balanced_dataset.py \
+  --config data/collection_config.json \
+  --output-dir /Volumes/EXTERNAL/ImprovedDatabase \
+  --originals-per-class 1500 \
+  --minimum-source-size 512 \
+  --standardized-size 512 \
+  --random-state 42
+```
+
+The collector selects 1,500 real and 1,500 fake originals by default. The fake
+set contains 500 autoencoder, 500 GAN, and 500 diffusion originals, balanced
+across configured sources. It creates four standardized-face variants per
+original: original PNG and JPEG Q75, Q50, and Q25, producing 12,000 manifest
+samples. For compilation videos, configure `segment_duration_seconds`; frames
+retain their segment and timestamp metadata. All four variants of a parent are
+assigned to the same grouped train, validation, or test split.
+
+Real/fake and generator metadata are never inferred from appearance. Folder
+renaming is optional: the JSON configuration is authoritative. Each source must
+be manually reviewed and marked `quality_label: "high"`; software can check
+readability and dimensions, but cannot prove authenticity, provenance, or the
+absence of prior compression.
+
 ### Creating a manifest from a dataset folder
 
 The dataset itself can remain outside this repository. From the repository
@@ -194,6 +224,40 @@ Run a trained model on one image:
 python3 -m model_tools.image_inference path/to/image.jpg --model outputs/experiments/07_all_features/model.joblib
 ```
 
+### Xception image baseline
+
+Xception is available as an optional eighth experiment. It reads `image_path`,
+`label`, and `split` directly from the same manifest used by the feature
+experiments:
+
+```bash
+pip install tensorflow
+python3 main.py \
+  --experiment 08_xception \
+  --manifest data/manifest.csv \
+  --epochs 10 \
+  --batch-size 16
+```
+
+Images are decoded as RGB and resized to Xception's required 299 by 299 input
+inside the TensorFlow data pipeline. The original files are never rewritten.
+Decoded/resized tensors are cached under
+`outputs/experiments/08_xception/image_cache/`, so this work is not repeated
+on every training epoch or on a later run with the same manifest rows. Use
+`--cache-dir /path/to/cache` to place this potentially large cache on another
+disk. Delete the cache safely when it is no longer needed; its filenames include
+a manifest-row fingerprint, so changed manifests create new cache entries.
+When storage is limited, pass `--no-image-cache`; images will then be decoded
+and resized again on each pass, trading additional runtime for negligible cache
+storage.
+
+The manifest must contain `train` and `test` rows. If it also contains
+`validation` (or `val`) rows, they are used for early stopping. Otherwise, a
+stratified validation subset is taken from the training rows; the test rows are
+not used to tune training. Outputs are compatible with the existing reporting:
+`model.keras`, `metrics.json`, `history.json`, `train_predictions.csv`,
+`test_predictions.csv`, and the usual printed and CSV summary tables.
+
 Optional: evaluate an already-trained model on a separate external test manifest.
 This is not required for the main experiment workflow:
 
@@ -277,6 +341,11 @@ python3 -m unittest tests.test_frequency tests.test_arcface_embedding
   - Each experiment trains its own classifier from scratch.
   - Outputs include `features.csv`, `model.joblib`, `metrics.json`,
     `train_predictions.csv`, and `test_predictions.csv`.
+
+- `training/xception_runner.py`
+  - Optional manifest-driven Xception training and evaluation pipeline.
+  - Resizes images in the input pipeline, caches transformed tensors, preserves
+    the held-out test split, and emits the same metrics and prediction columns.
 
 ### Model Tools
 
@@ -362,6 +431,9 @@ logic in one shared place.
 - `experiments/experiment_07_all_features.py`
   - Runs experiment 7: identity + frequency + geometry features.
   - Uses MediaPipe features from `feature_extractors/mediapipe_features.py`.
+
+- `experiments/experiment_08_xception.py`
+  - Runs the optional Xception raw-image baseline.
 
 ### Data Files
 
@@ -490,6 +562,26 @@ project comparison does not require `model_tools/evaluate_model.py`.
 - Arcface ablation study on upper/lower face
 - Distribution of feature vectors for arcface, mediapipe, and dct should be normalized the same way (So the concatenated feature vector doesn't have numbers 1000+ for dct and 0-1 for arcface (bad distribution)).
 - Training the classifiers separately (weak classifiers) and then fusing them (instead of concatenating the feature vectors).
+
+### Decision-level classifier fusion
+
+Train one classifier for each of the identity, frequency, and geometry feature
+groups, then combine their fake probabilities with validation-selected soft
+voting:
+
+```bash
+python -m experiments.experiment_09_classifier_fusion \
+  --manifest data/manifest.csv \
+  --output-dir outputs/experiments \
+  --validation-size 0.2 \
+  --max-false-positive-rate 0.1
+```
+
+If the manifest has `validation` or `val` rows, those rows are used to select
+the voting weights and threshold. Otherwise, a stratified validation subset is
+taken from the training rows. Test rows are never used for fusion selection.
+The fitted specialist models, fusion parameters, per-model probabilities, and
+metrics are saved under `09_classifier_fusion/`.
 - Consider the decision metrics, voting, etc.
 - Define metrics of our experiments (not just accuracy) (have plots) (for example, precision, recall, TP/FP)
   - Our project already does this. evaluate_model() calculates accuracy, precision, recall, F1 score, ROC AUC, average precision, and confusion matrix(scikit-learn layout, TN, FP, FN, TP), saved in metrics.json.

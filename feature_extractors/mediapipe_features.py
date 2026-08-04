@@ -87,8 +87,12 @@ def process_image(image_path: str | Path) -> None:
     cv2.destroyAllWindows()
 
 
-def extract_landmarks(image_path: str | Path) -> np.ndarray | None:
-    mp_image = mp.Image.create_from_file(str(image_path))
+def extract_landmarks(image: str | Path | np.ndarray) -> np.ndarray | None:
+    if isinstance(image, np.ndarray):
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
+    else:
+        mp_image = mp.Image.create_from_file(str(image))
     result = create_detector().detect(mp_image)
 
     if not result.face_landmarks:
@@ -181,7 +185,7 @@ def _empty_geometry_features() -> dict[str, float]:
     return features
 
 
-def extract_geometry_features(image_path: str | Path) -> dict[str, float]:
+def extract_geometry_features(image_path: str | Path | np.ndarray) -> dict[str, float]:
     """
     Extract MediaPipe landmark geometry features for one image.
 

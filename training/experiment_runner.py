@@ -23,6 +23,7 @@ from sklearn.pipeline import Pipeline
 from xgboost import XGBClassifier
 
 from feature_extractors.feature_extraction import (
+    FEATURE_PIPELINE_VERSION,
     create_feature_context,
     extract_image_features,
     validate_feature_groups,
@@ -82,7 +83,17 @@ def build_feature_table(
 
     for idx, sample in manifest.iterrows():
         image_path = sample[IMAGE_COLUMN]
-        features = extract_image_features(image_path, groups, context=context)
+        already_cropped = str(sample.get("face_crop_applied", "")).strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        features = extract_image_features(
+            image_path,
+            groups,
+            context=context,
+            apply_face_crop=not already_cropped,
+        )
         rows.append(
             {
                 IMAGE_COLUMN: image_path,
@@ -230,6 +241,8 @@ def run_experiment(
     features = build_feature_table(manifest, groups)
     features_path = experiment_dir / "features.csv"
     features.to_csv(features_path, index=False)
+    with (experiment_dir / "feature_pipeline.json").open("w", encoding="utf-8") as file:
+        json.dump({"version": FEATURE_PIPELINE_VERSION}, file, indent=2)
 
     x_train, x_test, y_train, y_test, feature_columns = split_features(
         features,
@@ -260,6 +273,7 @@ def run_experiment(
             "num_samples": int(len(features)),
             "num_features": int(len(feature_columns)),
             "feature_columns": feature_columns,
+            "feature_pipeline_version": FEATURE_PIPELINE_VERSION,
         }
     )
 
@@ -268,6 +282,7 @@ def run_experiment(
             "model": model,
             "feature_groups": groups,
             "feature_columns": feature_columns,
+            "feature_pipeline_version": FEATURE_PIPELINE_VERSION,
         },
         experiment_dir / "model.joblib",
     )

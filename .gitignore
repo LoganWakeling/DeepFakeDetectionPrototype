@@ -11,3 +11,10 @@ __pycache__/
 
 # Downloaded InsightFace model cache
 .insightface/
+
+# Personal experiment artifacts
+outputs/
+
+# Machine-specific generated manifests
+data/manifest.csv
+data/manifest.summary.json

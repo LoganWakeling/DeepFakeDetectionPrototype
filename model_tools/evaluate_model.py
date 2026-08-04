@@ -23,7 +23,19 @@ def build_features_for_model(manifest: pd.DataFrame, feature_groups: tuple[str, 
     rows: list[dict[str, float]] = []
 
     for idx, sample in manifest.iterrows():
-        rows.append(extract_image_features(sample[IMAGE_COLUMN], feature_groups, context=context))
+        already_cropped = str(sample.get("face_crop_applied", "")).strip().lower() in {
+            "1",
+            "true",
+            "yes",
+        }
+        rows.append(
+            extract_image_features(
+                sample[IMAGE_COLUMN],
+                feature_groups,
+                context=context,
+                apply_face_crop=not already_cropped,
+            )
+        )
         if (idx + 1) % 25 == 0:
             print(f"Extracted test features for {idx + 1}/{len(manifest)} images")
 

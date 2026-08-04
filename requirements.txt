@@ -22,6 +22,9 @@ scikit-learn
 scipy==1.18.0
 six==1.17.0
 tifffile==2026.6.1
+tensorflow==2.21.0
 # macOS native dependency for xgboost:
 # brew install libomp
 xgboost
+# Optional image-level Xception experiment:
+tensorflow==2.21.0
